@@ -1,0 +1,41 @@
+name: Upload file_a.txt to S3
+
+on:
+  workflow_dispatch: 
+  push:
+    branches:
+      - main
+    paths:
+      - 'file_a.txt'
+
+env:
+  AWS_REGION: eu-west-2 
+  S3_BUCKET_NAME: my-actions-test-1
+  FILE_TO_UPLOAD: file_a.txt
+
+jobs:
+  upload-specific-file:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Upload specific file to S3
+      run: |
+        if [ ! -f "${{ env.FILE_TO_UPLOAD }}" ]; then
+          echo "File '${{ env.FILE_TO_UPLOAD }}' not found. Exiting."
+          exit 1
+        fi
+        echo "Uploading ${{ env.FILE_TO_UPLOAD }} to s3://${{ env.S3_BUCKET_NAME }}/${{ env.S3_KEY_NAME }}"
+        aws s3 cp "${{ env.FILE_TO_UPLOAD }}" "s3://${{ env.S3_BUCKET_NAME }}/${{ env.S3_KEY_NAME }}"
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
