@@ -1,0 +1,16 @@
+{
+  "uploads": [
+    {
+      "file": "file_a.txt",
+      "bucket": "my-actions-test-1"
+    },
+    {
+      "file": "file_b.html",
+      "bucket": "my-actions-test-2"
+    },
+    {
+      "file": "another_file.js",
+      "bucket": "my-actions-test-bucket"
+    }
+  ]
+}
