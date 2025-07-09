@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'manifest.json'
-      - 'file_a.txt'
       - 'file_b.html'
       - 'another_file.js'
 
