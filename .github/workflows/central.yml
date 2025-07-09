@@ -43,7 +43,10 @@ jobs:
         jq -c '.uploads[]' "$MANIFEST_FILE" | while read -r entry; do
           FILE_PATH=$(echo "$entry" | jq -r '.file')
           BUCKET_NAME=$(echo "$entry" | jq -r '.bucket')
-          S3_KEY=$(echo "$entry" | jq -r '.key // "$(basename "$FILE_PATH")"') # Use 'key' if present, else filename
+
+          FILE_BASENAME=$(basename "$FILE_PATH")
+
+          S3_KEY=$(echo "$entry" | jq -r --arg basename "$FILE_BASENAME" '.key // $basename')
 
           if [ ! -f "$FILE_PATH" ]; then
             echo "Warning: File '$FILE_PATH' specified in manifest does not exist. Skipping."
