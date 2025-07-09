@@ -1,0 +1,62 @@
+name: Bulk S3 Upload via Manifest
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'manifest.json'
+      - 'file_a.txt'
+      - 'file_b.html'
+      - 'another_file.js'
+
+env:
+  AWS_REGION: eu-west-2
+
+jobs:
+  upload-files:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Install JQ (for parsing JSON)
+      run: sudo apt-get update && sudo apt-get install -y jq
+
+    - name: Read manifest and upload files to S3
+      run: |
+        MANIFEST_FILE="manifest.json"
+
+        if [ ! -f "$MANIFEST_FILE" ]; then
+          echo "Manifest file '$MANIFEST_FILE' not found."
+          exit 1
+        fi
+
+        jq -c '.uploads[]' "$MANIFEST_FILE" | while read -r entry; do
+          FILE_PATH=$(echo "$entry" | jq -r '.file')
+          BUCKET_NAME=$(echo "$entry" | jq -r '.bucket')
+          S3_KEY=$(echo "$entry" | jq -r '.key // "$(basename "$FILE_PATH")"') # Use 'key' if present, else filename
+
+          if [ ! -f "$FILE_PATH" ]; then
+            echo "Warning: File '$FILE_PATH' specified in manifest does not exist. Skipping."
+            continue
+          fi
+
+          echo "Uploading $FILE_PATH to s3://$BUCKET_NAME/$S3_KEY..."
+          aws s3 cp "$FILE_PATH" "s3://$BUCKET_NAME/$S3_KEY"
+          if [ $? -ne 0 ]; then
+            echo "Error uploading $FILE_PATH. Exiting."
+            exit 1
+          fi
+        done
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
